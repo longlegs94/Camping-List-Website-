@@ -27,6 +27,7 @@ export interface Progress {
   unassignedItems: number;
   mealsPlanned: number;
   percent: number;
+  toBuy: number;
 }
 
 export function computeProgress(state: AppState): Progress {
@@ -54,8 +55,38 @@ export function computeProgress(state: AppState): Progress {
     unassignedItems,
     mealsPlanned: state.meals.length,
     percent,
+    toBuy: grocery.filter((g) => !g.purchased && !g.packed).length,
   };
 }
+
+// Order meals sensibly: dated ones first (by date, then breakfast → lunch
+// → dinner → snack), undated ones at the end grouped as "Anytime".
+const MEAL_TYPE_ORDER: Record<string, number> = {
+  breakfast: 0,
+  lunch: 1,
+  dinner: 2,
+  snack: 3,
+};
+
+export function sortMeals<T extends { date: string; type: string }>(
+  meals: T[]
+): T[] {
+  return [...meals].sort((a, b) => {
+    const da = a.date || "9999-99-99";
+    const db = b.date || "9999-99-99";
+    if (da !== db) return da.localeCompare(db);
+    // Undated meals keep their original order (sort is stable).
+    if (!a.date && !b.date) return 0;
+    return (MEAL_TYPE_ORDER[a.type] ?? 9) - (MEAL_TYPE_ORDER[b.type] ?? 9);
+  });
+}
+
+export const MEAL_TYPE_ICON: Record<string, string> = {
+  breakfast: "🍳",
+  lunch: "🥪",
+  dinner: "🍲",
+  snack: "🍿",
+};
 
 export function statusColor(status: Status): string {
   switch (status) {

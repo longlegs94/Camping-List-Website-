@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useStore } from "@/lib/store";
 import { computeProgress, formatDate } from "@/lib/utils";
 import { Card, PageHeader, ProgressBar, Stat } from "@/components/ui";
+import { Welcome } from "@/components/Welcome";
 
 const LINKS = [
   { href: "/meals", label: "Meals", icon: "🍳" },
@@ -28,6 +29,8 @@ export default function Dashboard() {
         subtitle={trip.location || "Add a location in Trip settings"}
       />
 
+      <Welcome />
+
       <Card>
         <div className="mb-2 flex items-center justify-between text-sm">
           <span className="font-semibold text-brand-700">Overall progress</span>
@@ -40,20 +43,16 @@ export default function Dashboard() {
       </Card>
 
       {/* Trip facts */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="!p-3">
-          <div className="text-xs font-medium text-gray-500">Arrival</div>
-          <div className="font-semibold text-brand-700">
-            {formatDate(trip.arrivalDate)}
-          </div>
-        </Card>
-        <Card className="!p-3">
-          <div className="text-xs font-medium text-gray-500">Departure</div>
-          <div className="font-semibold text-brand-700">
-            {formatDate(trip.departureDate)}
-          </div>
-        </Card>
-      </div>
+      <Card className="!p-3 text-center">
+        <div className="text-xs font-medium text-gray-500">Trip dates</div>
+        <div className="font-semibold text-brand-700">
+          {trip.arrivalDate || trip.departureDate
+            ? `${formatDate(trip.arrivalDate)} → ${formatDate(
+                trip.departureDate
+              )}`
+            : "Set dates in Trip settings"}
+        </div>
+      </Card>
 
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Adults" value={trip.adults} />
@@ -61,13 +60,10 @@ export default function Dashboard() {
         <Stat label="Members" value={state.members.length} />
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Meals" value={p.mealsPlanned} />
-        <Stat
-          label="Unassigned"
-          value={p.unassignedItems}
-          hint="items"
-        />
+        <Stat label="To buy" value={p.toBuy} hint="groceries" />
+        <Stat label="Unassigned" value={p.unassignedItems} hint="items" />
         <Stat label="Unpacked" value={p.unpackedItems} hint="items" />
       </div>
 

@@ -3,7 +3,14 @@
 import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { buildGroceryList } from "@/lib/grocery";
-import { Button, Card, EmptyState, MemberSelect, PageHeader } from "@/components/ui";
+import {
+  Button,
+  Card,
+  EmptyState,
+  MemberSelect,
+  PageHeader,
+  ProgressBar,
+} from "@/components/ui";
 import { FOOD_CATEGORIES } from "@/lib/types";
 import type { GroceryLine, FoodCategory, GroceryOverride } from "@/lib/types";
 import { uid } from "@/lib/seed";
@@ -69,8 +76,17 @@ export default function FoodPage() {
       arr.push(l);
       map.set(l.category, arr);
     }
+    // Within each category, items still to buy come first.
+    for (const arr of map.values())
+      arr.sort(
+        (a, b) =>
+          Number(a.purchased || a.packed) - Number(b.purchased || b.packed) ||
+          a.name.localeCompare(b.name)
+      );
     return Array.from(map.entries());
   }, [filtered]);
+
+  const bought = lines.filter((l) => l.purchased || l.packed).length;
 
   return (
     <div className="space-y-4">
@@ -78,6 +94,20 @@ export default function FoodPage() {
         title="Grocery List"
         subtitle="Auto-combined from all meal ingredients"
       />
+
+      {lines.length > 0 && (
+        <Card>
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="font-semibold text-brand-700">Shopping done</span>
+            <span className="font-bold text-brand-700">
+              {bought} / {lines.length}
+            </span>
+          </div>
+          <ProgressBar
+            percent={Math.round((bought / lines.length) * 100)}
+          />
+        </Card>
+      )}
 
       <Card className="no-print space-y-3">
         <input
@@ -190,10 +220,23 @@ export default function FoodPage() {
         </EmptyState>
       )}
 
-      {grouped.map(([cat, catLines]) => (
+      {grouped.map(([cat, catLines]) => {
+        const catBought = catLines.filter(
+          (l) => l.purchased || l.packed
+        ).length;
+        return (
         <div key={cat}>
-          <h3 className="mb-2 px-1 text-sm font-bold uppercase tracking-wide text-brand-600">
+          <h3 className="mb-2 flex items-center justify-between px-1 text-sm font-bold uppercase tracking-wide text-brand-600">
             {cat}
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold normal-case tracking-normal ${
+                catBought === catLines.length
+                  ? "bg-brand-500 text-white"
+                  : "bg-brand-100 text-brand-700"
+              }`}
+            >
+              {catBought}/{catLines.length}
+            </span>
           </h3>
           <div className="space-y-2">
             {catLines.map((l) => (
@@ -207,7 +250,13 @@ export default function FoodPage() {
                     aria-label={`Mark ${l.name} packed`}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="font-medium">
+                    <div
+                      className={`font-medium ${
+                        l.purchased || l.packed
+                          ? "text-gray-400 line-through"
+                          : ""
+                      }`}
+                    >
                       {l.name}
                       {l.meals.length > 0 && (
                         <span className="ml-2 text-[11px] text-gray-400">
@@ -270,7 +319,8 @@ export default function FoodPage() {
             ))}
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

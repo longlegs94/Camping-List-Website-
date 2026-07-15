@@ -5,6 +5,10 @@ import { STATUS_LABEL, STATUSES } from "@/lib/types";
 import type { Status, Member } from "@/lib/types";
 import { statusColor } from "@/lib/utils";
 
+// Shared text-input style used across all forms.
+export const inputCls =
+  "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none";
+
 export function Card({
   children,
   className = "",

@@ -26,21 +26,30 @@ interface StoreValue {
   replace: (next: AppState) => void;
   loaded: boolean;
   syncStatus: SyncStatus;
+  // True on a brand-new device with no saved trip (drives the welcome card).
+  isFresh: boolean;
+  dismissWelcome: () => void;
+  // Switch this device to another trip by invite code.
+  joinTrip: (code: string) => void;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
 
-function loadLocal(): AppState {
-  if (typeof window === "undefined") return defaultState();
+function loadLocal(): { state: AppState; existed: boolean } {
+  if (typeof window === "undefined")
+    return { state: defaultState(), existed: false };
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const me = window.localStorage.getItem(ME_KEY);
-    if (!raw) return defaultState();
+    if (!raw) return { state: defaultState(), existed: false };
     const parsed = JSON.parse(raw) as AppState;
     // Shallow-merge with defaults so new fields don't break old data.
-    return { ...defaultState(), ...parsed, currentMemberId: me || null };
+    return {
+      state: { ...defaultState(), ...parsed, currentMemberId: me || null },
+      existed: true,
+    };
   } catch {
-    return defaultState();
+    return { state: defaultState(), existed: false };
   }
 }
 
@@ -72,6 +81,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AppState>(defaultState);
   const [loaded, setLoaded] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
+  const [isFresh, setIsFresh] = useState(false);
 
   // Serialized shared-state we last sent to (or received from) the cloud.
   // Used to skip redundant saves and ignore our own realtime echoes.
@@ -107,7 +117,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     sharedJson(stateRef.current) !== lastSyncedRef.current;
 
   const fetchCloud = useCallback(
-    async (code: string, createIfMissing: boolean) => {
+    async (code: string) => {
       try {
         const { data, error } = await supabase
           .from(TRIPS_TABLE)
@@ -122,15 +132,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           } else if (!localDirty()) {
             setSyncStatus("synced");
           }
-        } else if (createIfMissing) {
-          const shared = stripLocalOnly(stateRef.current);
-          const { error: upErr } = await supabase
-            .from(TRIPS_TABLE)
-            .upsert({ code, state: shared, updated_at: new Date().toISOString() });
-          if (upErr) throw upErr;
-          lastSyncedRef.current = stableStringify(shared);
-          setSyncStatus("synced");
         }
+        // No cloud row yet: nothing to pull. The row is created the first
+        // time the user actually changes something (debounced save below),
+        // so just visiting the site never creates stray trips.
       } catch {
         setSyncStatus("error");
       }
@@ -140,12 +145,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // ---- Initial hydration -------------------------------------------------
   useEffect(() => {
-    const local = loadLocal();
+    const { state: local, existed } = loadLocal();
     const url = new URL(window.location.href);
     const joinCode = url.searchParams.get("join");
 
     let initial = local;
-    if (joinCode && joinCode !== local.trip.inviteCode) {
+    if (joinCode && joinCode.toUpperCase() !== local.trip.inviteCode) {
       // Joining someone else's trip: adopt their code, keep nothing local.
       initial = { ...defaultState(), currentMemberId: null };
       initial.trip.inviteCode = joinCode.toUpperCase();
@@ -154,9 +159,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       window.history.replaceState({}, "", url.toString());
     }
     setState(initial);
+    // Baseline the sync comparison to what we just loaded, so a slow first
+    // fetch can never be raced by an auto-save of stale local data, and
+    // fresh visitors don't push an untouched default trip to the cloud.
+    lastSyncedRef.current = sharedJson(initial);
+    setIsFresh(!existed && !joinCode);
     setLoaded(true);
 
-    void fetchCloud(initial.trip.inviteCode, !joinCode);
+    void fetchCloud(initial.trip.inviteCode);
   }, [fetchCloud]);
 
   // ---- Persist locally + push to cloud (debounced) ------------------------
@@ -224,7 +234,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .subscribe();
 
     // Also refresh when the tab regains focus (covers missed events).
-    const onFocus = () => void fetchCloud(code, false);
+    const onFocus = () => void fetchCloud(code);
     window.addEventListener("focus", onFocus);
 
     return () => {
@@ -244,10 +254,34 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const reset = () => setState(defaultState());
   const replace = (next: AppState) => setState(next);
+  const dismissWelcome = () => setIsFresh(false);
+
+  const joinTrip = (rawCode: string) => {
+    const code = rawCode.trim().toUpperCase();
+    if (!code) return;
+    const next: AppState = { ...defaultState(), currentMemberId: null };
+    next.trip.inviteCode = code;
+    // Baseline first so the auto-save can't race the fetch and overwrite
+    // the trip we're joining with an empty default state.
+    lastSyncedRef.current = sharedJson(next);
+    setState(next);
+    setIsFresh(false);
+    void fetchCloud(code);
+  };
 
   return (
     <StoreContext.Provider
-      value={{ state, update, reset, replace, loaded, syncStatus }}
+      value={{
+        state,
+        update,
+        reset,
+        replace,
+        loaded,
+        syncStatus,
+        isFresh,
+        dismissWelcome,
+        joinTrip,
+      }}
     >
       {children}
     </StoreContext.Provider>

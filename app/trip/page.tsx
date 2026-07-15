@@ -7,10 +7,11 @@ import { uid, personalTemplate } from "@/lib/seed";
 import type { AppState } from "@/lib/types";
 
 export default function TripPage() {
-  const { state, update, replace, reset } = useStore();
+  const { state, update, replace, reset, joinTrip } = useStore();
   const { trip } = state;
   const [shareLink, setShareLink] = useState("");
   const [copied, setCopied] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -214,6 +215,41 @@ export default function TripPage() {
           same live trip — changes anyone saves show up for the whole group
           automatically.
         </p>
+      </Card>
+
+      <Card className="no-print space-y-2">
+        <div className="text-xs font-medium text-gray-500">
+          Switch to a different trip
+        </div>
+        <p className="text-xs text-gray-500">
+          On the wrong trip? Enter your group&apos;s invite code to switch
+          this device over. Your current trip stays saved in the cloud.
+        </p>
+        <div className="flex gap-2">
+          <input
+            value={joinCode}
+            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+            placeholder="Invite code"
+            maxLength={12}
+            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm uppercase tracking-widest focus:border-brand-400 focus:outline-none"
+          />
+          <Button
+            onClick={() => {
+              const code = joinCode.trim();
+              if (!code || code === trip.inviteCode) return;
+              if (
+                window.confirm(
+                  `Switch this device to trip ${code}? Your current trip (${trip.inviteCode}) stays in the cloud.`
+                )
+              ) {
+                joinTrip(code);
+                setJoinCode("");
+              }
+            }}
+          >
+            Switch
+          </Button>
+        </div>
       </Card>
 
       <Card className="no-print space-y-2">

@@ -1,4 +1,4 @@
-import type { AppState, ChecklistItem, Meal } from "./types";
+import type { AppState, ChecklistItem, Ingredient, Meal } from "./types";
 
 // Small id helper (good enough for a client-side app).
 export function uid(prefix = "id"): string {
@@ -108,44 +108,131 @@ const PERSONAL_TEMPLATE: ChecklistItem[] = [
   item("Camping chair", "Gear"),
 ];
 
-// ---- Sample meals (menus/ingredients kept light, easy to edit) ----------
-const MEALS: Meal[] = [
-  {
+// ---- Meal plan (ingredient quantities sized for 9 adults; shared items
+// like eggs/onions/peppers are split across meals so the combined grocery
+// list sums them back to the full shopping amounts) ----------------------
+type Ing = [name: string, qty: number, unit: string, cat: Ingredient["category"]];
+
+function meal(
+  name: string,
+  type: Meal["type"],
+  menu: string,
+  ingredients: Ing[],
+  dietaryOptions = "",
+  date = ""
+): Meal {
+  return {
     id: uid("meal"),
-    name: "Friday Dinner",
-    date: "",
-    type: "dinner",
-    servings: 6,
-    menu: "Burgers & salad",
-    ingredients: [
-      { id: uid("ing"), name: "Burger buns", quantity: 6, unit: "pcs", category: "Bread" },
-      { id: uid("ing"), name: "Ground beef", quantity: 2, unit: "lb", category: "Meat" },
-      { id: uid("ing"), name: "Lettuce", quantity: 1, unit: "head", category: "Produce" },
-      { id: uid("ing"), name: "Tomatoes", quantity: 3, unit: "pcs", category: "Produce" },
-      { id: uid("ing"), name: "Cheese slices", quantity: 6, unit: "pcs", category: "Dairy" },
-    ],
+    name,
+    date,
+    type,
+    servings: 9,
+    menu,
+    ingredients: ingredients.map(([n, q, u, c]) => ({
+      id: uid("ing"),
+      name: n,
+      quantity: q,
+      unit: u,
+      category: c,
+    })),
     assignedMemberId: null,
     notes: "",
-    dietaryOptions: "Veggie burgers available",
-  },
-  {
-    id: uid("meal"),
-    name: "Saturday Breakfast",
-    date: "",
-    type: "breakfast",
-    servings: 6,
-    menu: "Eggs & toast",
-    ingredients: [
-      { id: uid("ing"), name: "Eggs", quantity: 12, unit: "pcs", category: "Breakfast" },
-      { id: uid("ing"), name: "Bread", quantity: 1, unit: "loaf", category: "Bread" },
-      { id: uid("ing"), name: "Butter", quantity: 1, unit: "pack", category: "Dairy" },
-      { id: uid("ing"), name: "Coffee", quantity: 1, unit: "bag", category: "Drinks" },
-    ],
-    assignedMemberId: null,
-    notes: "",
-    dietaryOptions: "",
-  },
-];
+    dietaryOptions,
+  };
+}
+
+export function mealPlan(): Meal[] {
+  return [
+    meal("Friday Dinner", "dinner", "Pizza & Maggi noodles", [
+      ["Frozen pizza", 5, "large", "Other"],
+      ["Maggi noodles", 12, "packs", "Other"],
+    ]),
+    meal(
+      "Saturday Breakfast",
+      "breakfast",
+      "Breakfast wraps",
+      [
+        ["Tortilla wraps", 24, "large", "Bread"],
+        ["Hash browns", 2, "bags", "Breakfast"],
+        ["Eggs", 2, "dozen", "Breakfast"],
+        ["Bacon (for Ricky)", 1, "pack", "Meat"],
+        ["Bell peppers", 2, "pcs", "Produce"],
+        ["Onions", 2, "large", "Produce"],
+        ["Shredded cheese", 1, "kg", "Dairy"],
+        ["Salsa", 1, "large jar", "Condiments"],
+        ["Chai supplies", 12, "cups", "Drinks"],
+        ["Coffee", 12, "cups", "Drinks"],
+      ],
+      "Bacon cooked separately"
+    ),
+    meal(
+      "Saturday Lunch",
+      "lunch",
+      "Smash burgers & sweet kale salad",
+      [
+        ["Brioche burger buns", 24, "buns", "Bread"],
+        ["Ground beef", 3, "kg", "Meat"],
+        ["Veggie burger patties", 12, "patties", "Vegetarian protein"],
+        ["Onions", 2, "large", "Produce"],
+        ["Lettuce", 2, "heads", "Produce"],
+        ["Pickles", 1, "large jar", "Produce"],
+        ["Burger cheese slices", 24, "slices", "Dairy"],
+        ["Mayo", 1, "large bottle", "Condiments"],
+        ["Ketchup", 1, "large bottle", "Condiments"],
+        ["Mustard", 1, "bottle", "Condiments"],
+        ["Sweet kale salad", 3, "large bags", "Produce"],
+      ],
+      "Veggie patties available"
+    ),
+    meal(
+      "Saturday Dinner",
+      "dinner",
+      "Foil packets + corn on the cob",
+      [
+        ["Beef (foil packets)", 1.5, "kg", "Meat"],
+        ["Chicken (foil packets)", 1.5, "kg", "Meat"],
+        ["Paneer", 3, "400g packs", "Vegetarian protein"],
+        ["Zucchini", 5, "pcs", "Produce"],
+        ["Bell peppers", 6, "pcs", "Produce"],
+        ["Onions", 4, "large", "Produce"],
+        ["Mushrooms", 2, "large packs", "Produce"],
+        ["Corn on the cob", 12, "pcs", "Produce"],
+        ["Butter", 1, "large block", "Dairy"],
+        ["Salt", 1, "pcs", "Spices"],
+        ["Pepper", 1, "pcs", "Spices"],
+        ["Garlic powder", 1, "pcs", "Spices"],
+        ["Cajun seasoning", 1, "pcs", "Spices"],
+      ],
+      "Paneer packets (vegetarian)"
+    ),
+    meal(
+      "Sunday Breakfast",
+      "breakfast",
+      "Pancakes & eggs",
+      [
+        ["Pancake mix", 1, "box (30-35)", "Breakfast"],
+        ["Eggs", 2, "dozen", "Breakfast"],
+        ["Syrup", 1, "large bottle", "Breakfast"],
+        ["Strawberries", 2, "containers", "Produce"],
+        ["Milk", 4, "L", "Dairy"],
+        ["Chai supplies", 12, "cups", "Drinks"],
+        ["Coffee", 12, "cups", "Drinks"],
+      ]
+    ),
+    meal("Snacks", "snack", "Grazing all weekend", [
+      ["Trail mix", 1, "large bag", "Snacks"],
+      ["Blueberries", 2, "containers", "Snacks"],
+      ["Assorted fruit", 2, "types", "Snacks"],
+      ["Watermelon", 1, "large", "Snacks"],
+      ["Tortilla chips", 3, "large bags", "Snacks"],
+      ["Salsa", 1, "large jar", "Condiments"],
+      ["Chips", 4, "large bags", "Snacks"],
+      ["Rice Krispies", 2, "boxes", "Snacks"],
+      ["Chocolate chips", 1, "large bag", "Snacks"],
+      ["Granola bars", 2, "boxes", "Snacks"],
+    ]),
+  ];
+}
 
 export function defaultState(): AppState {
   return {
@@ -154,7 +241,7 @@ export function defaultState(): AppState {
       location: "",
       arrivalDate: "",
       departureDate: "",
-      adults: 0,
+      adults: 9,
       children: 0,
       inviteCode: uid("trip").slice(-6).toUpperCase(),
       notes: "",
@@ -162,7 +249,7 @@ export function defaultState(): AppState {
       campgroundRules: "",
     },
     members: [],
-    meals: MEALS,
+    meals: mealPlan(),
     gear: GEAR,
     kitchen: KITCHEN,
     personal: { template: PERSONAL_TEMPLATE },

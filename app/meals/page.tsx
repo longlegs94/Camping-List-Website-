@@ -8,10 +8,12 @@ import {
   EmptyState,
   MemberSelect,
   PageHeader,
+  inputCls,
 } from "@/components/ui";
 import { uid } from "@/lib/seed";
 import { FOOD_CATEGORIES, MEAL_TYPES } from "@/lib/types";
 import type { Meal, MealType, FoodCategory } from "@/lib/types";
+import { formatDate, sortMeals, MEAL_TYPE_ICON, memberName } from "@/lib/utils";
 
 export default function MealsPage() {
   const { state, update } = useStore();
@@ -42,39 +44,44 @@ export default function MealsPage() {
       if (m) Object.assign(m, patch);
     });
 
-  return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Meal Planner"
-        subtitle="Plan by day & time — ingredients build the grocery list"
-        action={
-          <Button onClick={addMeal} className="no-print">
-            + Meal
-          </Button>
-        }
-      />
+  // Group sorted meals under one heading per day ("" = Anytime, at the end).
+  const dayGroups: [string, Meal[]][] = [];
+  for (const m of sortMeals(state.meals)) {
+    const last = dayGroups[dayGroups.length - 1];
+    if (last && last[0] === m.date) last[1].push(m);
+    else dayGroups.push([m.date, [m]]);
+  }
 
-      {state.meals.length === 0 && (
-        <EmptyState>No meals yet. Add your first meal.</EmptyState>
-      )}
-
-      {state.meals.map((meal) => {
-        const isOpen = open === meal.id;
-        return (
-          <Card key={meal.id}>
-            <button
-              onClick={() => setOpen(isOpen ? null : meal.id)}
-              className="flex w-full items-center justify-between text-left"
-            >
-              <div>
-                <div className="font-bold text-brand-800">{meal.name}</div>
-                <div className="text-xs text-gray-500">
-                  {meal.date || "no date"} · {meal.type} · {meal.servings}{" "}
-                  servings · {meal.ingredients.length} ingredients
+  const renderMeal = (meal: Meal) => {
+    const isOpen = open === meal.id;
+    const cook = memberName(state.members, meal.assignedMemberId);
+    return (
+      <Card key={meal.id}>
+        <button
+          onClick={() => setOpen(isOpen ? null : meal.id)}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span className="mt-0.5 text-xl">
+              {MEAL_TYPE_ICON[meal.type] ?? "🍽️"}
+            </span>
+            <div className="min-w-0">
+              <div className="font-bold text-brand-800">{meal.name}</div>
+              {meal.menu && (
+                <div className="truncate text-sm text-gray-600">
+                  {meal.menu}
                 </div>
+              )}
+              <div className="text-xs text-gray-400">
+                {meal.servings} servings · {meal.ingredients.length}{" "}
+                ingredients{cook ? ` · 👤 ${cook}` : " · needs a cook"}
               </div>
-              <span className="text-brand-300">{isOpen ? "▲" : "▼"}</span>
-            </button>
+            </div>
+          </div>
+          <span className="shrink-0 text-brand-300">
+            {isOpen ? "▲" : "▼"}
+          </span>
+        </button>
 
             {isOpen && (
               <div className="mt-4 space-y-3 border-t border-brand-50 pt-4">
@@ -294,15 +301,37 @@ export default function MealsPage() {
                 </div>
               </div>
             )}
-          </Card>
-        );
-      })}
+      </Card>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title="Meal Planner"
+        subtitle="Plan by day & time — ingredients build the grocery list"
+        action={
+          <Button onClick={addMeal} className="no-print">
+            + Meal
+          </Button>
+        }
+      />
+
+      {state.meals.length === 0 && (
+        <EmptyState>No meals yet. Add your first meal.</EmptyState>
+      )}
+
+      {dayGroups.map(([date, meals]) => (
+        <div key={date || "anytime"}>
+          <h3 className="mb-2 px-1 text-sm font-bold uppercase tracking-wide text-brand-600">
+            {date ? formatDate(date) : "Anytime"}
+          </h3>
+          <div className="space-y-3">{meals.map(renderMeal)}</div>
+        </div>
+      ))}
     </div>
   );
 }
-
-const inputCls =
-  "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none";
 
 function Field({
   label,
