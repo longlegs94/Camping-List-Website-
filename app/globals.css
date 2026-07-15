@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-brand-50 text-gray-800 antialiased;
+}
+
+/* Large, easy-to-tap checkboxes */
+.big-check {
+  @apply h-6 w-6 shrink-0 cursor-pointer rounded-md border-2 border-brand-300 text-brand-500 focus:ring-brand-400 accent-brand-500;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    @apply bg-white;
+  }
+  .print-block {
+    break-inside: avoid;
+  }
+}
