@@ -12,9 +12,17 @@ const BOTTOM = [
   { href: "/my-items", label: "My Items", icon: "✅" },
 ];
 
+const SYNC_LABEL: Record<string, { text: string; cls: string }> = {
+  local: { text: "· offline", cls: "text-gray-300" },
+  saving: { text: "· saving…", cls: "text-amber-500" },
+  synced: { text: "· live", cls: "text-brand-500" },
+  error: { text: "· offline", cls: "text-red-400" },
+};
+
 export function TopBar() {
-  const { state } = useStore();
+  const { state, syncStatus } = useStore();
   const me = state.members.find((m) => m.id === state.currentMemberId);
+  const sync = SYNC_LABEL[syncStatus];
   return (
     <header className="no-print sticky top-0 z-20 border-b border-brand-100 bg-white/90 backdrop-blur">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
@@ -22,6 +30,9 @@ export function TopBar() {
           <span className="text-xl">🏕️</span>
           <span className="font-bold text-brand-800">
             {state.trip.name || "Camping Planner"}
+          </span>
+          <span className={`text-[10px] font-medium ${sync.cls}`}>
+            {sync.text}
           </span>
         </Link>
         <Link

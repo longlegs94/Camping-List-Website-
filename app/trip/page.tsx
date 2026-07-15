@@ -85,7 +85,7 @@ export default function TripPage() {
   const resetAll = () => {
     if (
       window.confirm(
-        "Reset all data? This permanently erases everything on this device and cannot be undone."
+        "Reset all data? This starts a brand-new empty trip on this device. The group's current shared trip stays in the cloud under its old invite code."
       )
     ) {
       reset();
@@ -210,9 +210,9 @@ export default function TripPage() {
           {copied ? "Copied!" : "Copy share link"}
         </Button>
         <p className="text-xs text-gray-500">
-          Share this link with your group. Note: everyone using the same
-          browser on the same device shares the same data — see the README
-          for multi-device options.
+          Share this link with your group. Everyone who opens it sees the
+          same live trip — changes anyone saves show up for the whole group
+          automatically.
         </p>
       </Card>
 

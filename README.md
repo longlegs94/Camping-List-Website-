@@ -6,17 +6,27 @@ lists, and who's responsible for what.
 
 ## How it stores data
 
-This app runs **zero-config** — there is no backend, database, or sign-up.
-Everything (trip details, members, meals, checklists, grocery list) is
-stored in your browser's `localStorage`, under the key
-`camping-planner-state-v1`. That means:
+The whole trip lives in a shared **Supabase** database. Every change anyone
+saves — checking off an item, adding a meal, assigning gear — syncs to the
+cloud and shows up live for everyone else viewing the trip. There are no
+accounts or passwords: the trip's **invite code** (baked into the share
+link) is what connects everyone to the same trip.
 
-- No account needed, nothing to deploy or configure to try it out.
-- Your data lives on **this device, in this browser**. Clearing site data
-  or switching browsers/devices starts you over.
-- "Sharing" a trip (see below) works great when your group is looking at
-  the same browser/device, but does **not** sync data across separate
-  phones or computers on its own.
+- A copy is also kept in each browser's `localStorage`, so the app still
+  opens with your latest data if you're briefly offline.
+- "Who am I" (the member you picked on the Members page) is stored only on
+  your own device — it never overwrites anyone else's choice.
+- The top bar shows a small sync indicator: **live** (connected),
+  **saving…**, or **offline**.
+
+## Group sharing
+
+1. The organizer opens the site and sets up the trip.
+2. Trip settings shows an **invite code** and **share link**
+   (`/?join=<code>`).
+3. Anyone who opens that link joins the same trip: they see all the current
+   data, pick their own name on the Members page, and check off their items.
+4. Everyone's changes appear for the whole group within a couple of seconds.
 
 ## Running locally
 
@@ -55,50 +65,33 @@ npm run start
   a PDF, search across every list, and read emergency contacts/campground
   rules/notes at a glance.
 
-## Group sharing today
+## Supabase setup
 
-Trip settings shows an **invite code** and a **share link**
-(`/?join=<code>`). Sending that link to your group is meant for the
-"everyone's looking at the same browser/device" case — for example, a
-shared tablet at the campsite, or planning together on one laptop during a
-video call.
-
-**Limitation to know:** because state lives in `localStorage`, opening the
-share link on a different phone or browser starts a *separate, empty* copy
-of the data — it does not pull down the group's existing trip. Real
-multi-device sync requires a shared backend, which is what the Supabase
-option below adds.
-
-## Going multi-device with Supabase
-
-If you want everyone to see the same live data from their own devices, the
-next step is to swap the local persistence for a real database.
+The app ships pointed at a working Supabase project, so it runs with zero
+configuration. To use your own Supabase project instead:
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL
-   editor — it creates `trips`, `members`, `meals`, `ingredients`,
-   `checklist_items`, and `grocery_items` tables that mirror the shapes in
-   `lib/types.ts`, with a comment block explaining each piece.
-3. Add these environment variables (e.g. in `.env.local` and in your
+   editor — it creates the `shared_trips` table (one row per trip, whole
+   trip state as JSON), open row-level-security policies, and realtime
+   broadcasting.
+3. Set these environment variables (in `.env.local` locally, and in your
    hosting provider's project settings):
    ```
    NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=...   # the "publishable" key
    ```
-4. Replace the persistence in `lib/store.tsx` (currently
-   `window.localStorage.getItem`/`setItem`) with a data adapter that reads
-   and writes the same `AppState` shape to/from Supabase instead — the rest
-   of the app (`useStore()`, `update()`, all the pages) can stay as-is
-   since they only depend on that store's interface.
-5. Enable Row Level Security on every table before going live — the schema
-   file ships with RLS off and a note on how to turn it on.
+
+**Access model to know:** this app deliberately avoids accounts. Anyone
+with the site URL and an invite code can read and edit that trip, and the
+policies allow any visitor to write rows. That's a fine trade-off for a
+casual group checklist — don't store anything sensitive in it.
 
 ## Deploying to Vercel
 
 1. Push this repository to GitHub.
 2. Go to [vercel.com](https://vercel.com), choose **Import Project**, and
    select the repo.
-3. Leave the default Next.js build settings and deploy.
-4. If you've added the Supabase environment variables above, set them in
-   the Vercel project's **Settings → Environment Variables** before
-   deploying.
+3. Leave the default Next.js build settings and deploy — no environment
+   variables required (add the two Supabase vars only if you're pointing at
+   your own Supabase project).
