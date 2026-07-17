@@ -16,6 +16,13 @@ export function allChecklistItems(state: AppState): ChecklistItem[] {
   return [...state.gear, ...state.kitchen, ...personal];
 }
 
+// Group items that get assigned to a member (gear + kitchen). Personal
+// packing items belong to one person by definition, so they are never
+// part of assignment flows.
+export function sharedChecklistItems(state: AppState): ChecklistItem[] {
+  return [...state.gear, ...state.kitchen];
+}
+
 function itemDone(status: Status): boolean {
   return status === "packed" || status === "complete";
 }
@@ -41,7 +48,11 @@ export function computeProgress(state: AppState): Progress {
   const packedItems = checklistPacked + groceryPacked;
   const unpackedItems = totalItems - packedItems;
 
-  const unassignedChecklist = items.filter((i) => !i.assignedMemberId).length;
+  // Only shared items count as "unassigned" — personal packing items
+  // already belong to their list's owner.
+  const unassignedChecklist = sharedChecklistItems(state).filter(
+    (i) => !i.assignedMemberId
+  ).length;
   const unassignedGrocery = grocery.filter((g) => !g.assignedMemberId).length;
   const unassignedItems = unassignedChecklist + unassignedGrocery;
 

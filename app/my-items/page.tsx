@@ -59,7 +59,6 @@ export default function MyItemsPage() {
     );
   }
 
-  const myMeals = state.meals.filter((m) => m.assignedMemberId === memberId);
   const myChecklistItems = [
     ...state.gear.map((i) => ({ ...i, source: "gear" as const })),
     ...state.kitchen.map((i) => ({ ...i, source: "kitchen" as const })),
@@ -129,31 +128,6 @@ export default function MyItemsPage() {
           {doneCount} of {totalCount} items done
         </p>
       </Card>
-
-      {/* Assigned meals */}
-      <div>
-        <h3 className="mb-2 px-1 text-sm font-bold uppercase tracking-wide text-brand-600">
-          Assigned Meals
-        </h3>
-        {myMeals.length === 0 ? (
-          <EmptyState>No meals assigned to you.</EmptyState>
-        ) : (
-          <div className="space-y-2">
-            {myMeals.map((m) => (
-              <Card key={m.id} className="!p-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span>🍽️</span>
-                  <span className="font-medium">{m.name}</span>
-                  <span className="text-xs text-gray-400">
-                    ({m.type}
-                    {m.date ? `, ${m.date}` : ""})
-                  </span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Gear & kitchen */}
       <div>

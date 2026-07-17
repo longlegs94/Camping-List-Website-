@@ -6,14 +6,13 @@ import {
   Button,
   Card,
   EmptyState,
-  MemberSelect,
   PageHeader,
   inputCls,
 } from "@/components/ui";
 import { uid } from "@/lib/seed";
 import { FOOD_CATEGORIES, MEAL_TYPES } from "@/lib/types";
 import type { Meal, MealType, FoodCategory } from "@/lib/types";
-import { formatDate, sortMeals, MEAL_TYPE_ICON, memberName } from "@/lib/utils";
+import { formatDate, sortMeals, MEAL_TYPE_ICON } from "@/lib/utils";
 
 export default function MealsPage() {
   const { state, update } = useStore();
@@ -54,7 +53,6 @@ export default function MealsPage() {
 
   const renderMeal = (meal: Meal) => {
     const isOpen = open === meal.id;
-    const cook = memberName(state.members, meal.assignedMemberId);
     return (
       <Card key={meal.id}>
         <button
@@ -74,7 +72,7 @@ export default function MealsPage() {
               )}
               <div className="text-xs text-gray-400">
                 {meal.servings} servings · {meal.ingredients.length}{" "}
-                ingredients{cook ? ` · 👤 ${cook}` : " · needs a cook"}
+                ingredients
               </div>
             </div>
           </div>
@@ -143,16 +141,6 @@ export default function MealsPage() {
                     }
                     placeholder="e.g. Burgers & salad"
                     className={inputCls}
-                  />
-                </Field>
-
-                <Field label="Assigned cook">
-                  <MemberSelect
-                    members={state.members}
-                    value={meal.assignedMemberId}
-                    onChange={(id) =>
-                      patchMeal(meal.id, { assignedMemberId: id })
-                    }
                   />
                 </Field>
 

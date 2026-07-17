@@ -26,9 +26,7 @@ export default function ToolsPage() {
         const kitchen = state.kitchen.filter(
           (i) => i.assignedMemberId === m.id
         ).length;
-        const meals = state.meals.filter((x) => x.assignedMemberId === m.id)
-          .length;
-        return `- ${m.name}: ${grocery + gear + kitchen} items, ${meals} meals`;
+        return `- ${m.name}: ${grocery + gear + kitchen} items`;
       })
       .join("\n");
 

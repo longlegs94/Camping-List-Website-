@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { Button, Card, EmptyState, PageHeader } from "@/components/ui";
 import { uid, listFromTemplate } from "@/lib/seed";
-import { allChecklistItems } from "@/lib/utils";
+import { sharedChecklistItems } from "@/lib/utils";
 import { buildGroceryList } from "@/lib/grocery";
 
 export default function MembersPage() {
@@ -14,7 +14,7 @@ export default function MembersPage() {
   const [allergies, setAllergies] = useState("");
 
   const grocery = buildGroceryList(state);
-  const items = allChecklistItems(state);
+  const items = sharedChecklistItems(state);
 
   const addMember = () => {
     if (!name.trim()) return;
@@ -40,9 +40,6 @@ export default function MembersPage() {
     const assignedGrocery = grocery.filter(
       (g) => g.assignedMemberId === memberId
     );
-    const assignedMeals = state.meals.filter(
-      (m) => m.assignedMemberId === memberId
-    );
     const personal = state.personal[memberId] ?? [];
     const doneCount =
       assignedItems.filter(
@@ -55,7 +52,6 @@ export default function MembersPage() {
     return {
       assignedItems,
       assignedGrocery,
-      assignedMeals,
       personal,
       doneCount,
       total,
@@ -168,18 +164,12 @@ export default function MembersPage() {
                 </div>
               </div>
 
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs">
                 <div className="rounded-lg bg-brand-50 py-1">
                   <div className="font-bold text-brand-700">
                     {r.assignedItems.length + r.assignedGrocery.length}
                   </div>
                   <div className="text-gray-500">items</div>
-                </div>
-                <div className="rounded-lg bg-brand-50 py-1">
-                  <div className="font-bold text-brand-700">
-                    {r.assignedMeals.length}
-                  </div>
-                  <div className="text-gray-500">meals</div>
                 </div>
                 <div className="rounded-lg bg-brand-50 py-1">
                   <div className="font-bold text-brand-700">
