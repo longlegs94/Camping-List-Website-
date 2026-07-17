@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useStore } from "@/lib/store";
 import { Button, Card, EmptyState, PageHeader } from "@/components/ui";
-import { uid, personalTemplate } from "@/lib/seed";
+import { uid, listFromTemplate } from "@/lib/seed";
 import { allChecklistItems } from "@/lib/utils";
 import { buildGroceryList } from "@/lib/grocery";
 
@@ -26,7 +26,7 @@ export default function MembersPage() {
         dietaryRestrictions: diet.trim(),
         allergies: allergies.trim(),
       });
-      d.personal[id] = personalTemplate();
+      d.personal[id] = listFromTemplate(d.personal);
       // First member becomes the current user on this device if none set.
       if (!d.currentMemberId) d.currentMemberId = id;
     });
@@ -136,7 +136,7 @@ export default function MembersPage() {
                         update((d) => {
                           d.currentMemberId = m.id;
                           if (!d.personal[m.id])
-                            d.personal[m.id] = personalTemplate();
+                            d.personal[m.id] = listFromTemplate(d.personal);
                         })
                       }
                       className="no-print text-xs font-medium text-brand-600 underline"
