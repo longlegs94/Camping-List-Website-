@@ -10,7 +10,7 @@ import {
   PageHeader,
   ProgressBar,
 } from "@/components/ui";
-import { uid, personalTemplate } from "@/lib/seed";
+import { uid, listFromTemplate } from "@/lib/seed";
 import type { ChecklistItem } from "@/lib/types";
 
 function isDone(status: ChecklistItem["status"]): boolean {
@@ -25,7 +25,7 @@ export default function MyItemsPage() {
   const chooseMember = (id: string | null) =>
     update((d) => {
       d.currentMemberId = id;
-      if (id && !d.personal[id]) d.personal[id] = personalTemplate();
+      if (id && !d.personal[id]) d.personal[id] = listFromTemplate(d.personal);
     });
 
   if (state.members.length === 0) {

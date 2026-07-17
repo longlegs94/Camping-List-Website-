@@ -262,3 +262,13 @@ export function defaultState(): AppState {
 export function personalTemplate(): ChecklistItem[] {
   return PERSONAL_TEMPLATE.map((i) => ({ ...i, id: uid("chk") }));
 }
+
+// Seed a member's personal list from the trip's live template (which may
+// have been extended with group-wide items), falling back to the built-in
+// default. Each item gets a fresh id.
+export function listFromTemplate(
+  personal: Record<string, ChecklistItem[]>
+): ChecklistItem[] {
+  const src = personal["template"] ?? PERSONAL_TEMPLATE;
+  return src.map((i) => ({ ...i, id: uid("chk") }));
+}
